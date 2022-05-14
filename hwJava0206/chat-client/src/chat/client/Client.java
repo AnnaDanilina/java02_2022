@@ -54,6 +54,8 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
         btnSend.addActionListener(this);
         tfMessage.addActionListener(this);
         btnLogin.addActionListener(this);
+        btnDisconnect.addActionListener(this);
+        panelBottom.setVisible(false);
 
         panelTop.add(tfIPAddress);
         panelTop.add(tfPort);
@@ -91,6 +93,8 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
             sendMessage();
         } else if (src == btnLogin) {
             connect();
+        } else if (src == btnDisconnect) {
+            socketThread.close();
         } else {
             throw new RuntimeException("Action for component unimplemented");
         }
@@ -162,16 +166,22 @@ public class Client extends JFrame implements ActionListener, Thread.UncaughtExc
     @Override
     public void onSocketStart(SocketThread t, Socket s) {
         putLog("Start");
+
     }
 
     @Override
     public void onSocketStop(SocketThread t) {
-        putLog("Stop");
+      //  putLog("Stop");
+        panelTop.setVisible(true);
+        panelBottom.setVisible(false);
+
     }
 
     @Override
     public void onSocketReady(SocketThread t, Socket socket) {
-        putLog("Ready");
+      //  putLog("Ready");
+        panelTop.setVisible(false);
+        panelBottom.setVisible(true);
     }
 
     @Override

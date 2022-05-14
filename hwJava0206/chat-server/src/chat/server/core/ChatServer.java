@@ -9,17 +9,24 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Vector;
 
 public class ChatServer implements ServerSocketThreadListener, SocketThreadListener {
     private final int SERVER_SOCKET_TIMEOUT = 2000;
     private final DateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss: ");
+    private Vector<SocketThread> clients = new Vector<>();
 
     int counter = 0;
     ServerSocketThread server;
+    ChatServerListener listener;
+
+    public ChatServer(ChatServerListener listener){
+        this.listener = listener;
+    }
 
     public void start(int port) {
         if (server != null && server.isAlive()) {
-            System.out.println("Server already started");
+            putLog("Server already started");
         } else {
             server = new ServerSocketThread(this, "Chat server " + counter++, port, SERVER_SOCKET_TIMEOUT);
         }
@@ -27,7 +34,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
 
     public void stop() {
         if (server == null || !server.isAlive()) {
-            System.out.println("Server is not running");
+            putLog("Server is not running");
         } else {
             server.interrupt();
         }
@@ -37,7 +44,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         msg = DATE_FORMAT.format(System.currentTimeMillis()) +
                 Thread.currentThread().getName() +
                 ": " + msg;
-        System.out.println(msg);
+        listener.onChatServerMessage(msg);
     }
 
     /**
@@ -69,6 +76,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         putLog("client connected");
         String name = "SocketThread" + client.getInetAddress() + ": " + client.getPort();
         new SocketThread(this, name, client);
+
     }
 
     @Override
@@ -84,16 +92,21 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public void onSocketStop(SocketThread t) {
         putLog("client disconnected");
+        clients.remove(t);
     }
 
     @Override
     public void onSocketReady(SocketThread t, Socket socket) {
         putLog("client is ready");
+        clients.add(t);
     }
 
     @Override
     public void onReceiveString(SocketThread t, Socket s, String msg) {
         t.sendMessage("echo: " + msg);
+        for(SocketThread thread : clients){
+            thread.sendMessage(t.getName() + " " + msg);
+        }
     }
 
     @Override
