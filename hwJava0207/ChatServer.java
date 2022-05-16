@@ -98,7 +98,12 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public void onSocketStop(SocketThread t) {
         putLog("client disconnected");
-        clients.remove(t);
+        ClientThread client = (ClientThread) t;
+        clients.remove(client);
+        if (client.isAuthorized()){
+            sendToAllAuthorized(Messages.getTypeBroadcast("Server", client.getNickname() + " disconnected"));
+        }
+
     }
 
     @Override
@@ -118,7 +123,8 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     }
 
     private void handleAuthMsg(ClientThread client, String msg) {
-        sendToAllAuthorized(msg);
+        sendToAllAuthorized(Messages.getTypeBroadcast(client.getNickname(), msg));
+
     }
 
     private void sendToAllAuthorized(String msg) {
