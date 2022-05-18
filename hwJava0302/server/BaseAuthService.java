@@ -1,21 +1,12 @@
 package server;
 
-import java.util.ArrayList;
+import java.sql.*;
 
 public class BaseAuthService  implements AuthService  {
-    private class Entry {
-        private String login;
-        private String pass;
-        private String nick;
 
-        public Entry(String login, String pass, String nick) {
-            this.login = login;
-            this.pass = pass;
-            this.nick = nick;
-        }
-    }
-
-    private ArrayList<Entry> entries;
+    private static Connection connection ;
+    private static Statement stmt;
+    private static PreparedStatement ps;
 
     @Override
     public void start() { }
@@ -25,30 +16,68 @@ public class BaseAuthService  implements AuthService  {
 
     @Override
     public boolean changeNick(ClientHandler c, String newNick) {
-        for (Entry o : entries) {
-            if (o.nick.equals(newNick))
-                return false;
-        }
-        for (Entry o : entries) {
-            if (o.nick.equals(c.getName())) {
-                o.nick = newNick;
-                return true;
+        try {
+            connect();
+            ResultSet rs = stmt.executeQuery("SELECT nickname FROM users");
+            ResultSetMetaData rsmd = rs.getMetaData();
+            while (rs.next()){
+                if (rs.getString("nickname").equals(newNick)) return false;
             }
+            stmt.executeUpdate("UPDATE users SET nickname  = '" + newNick + "' WHERE login like( '" + c.getName() + "');");
+
+            connection.commit();
+            return true;
+
+        }catch (Exception e){
+            e.printStackTrace();
+            return true;
+        }finally {
+            disconnect();
         }
-        return false;
+
     }
 
-    public BaseAuthService() {
-        entries = new ArrayList<>();
-        for (int i = 0; i < 5; i++) {
-            entries.add(new Entry("login" +i, "pass" +i, "nick" +i));
+    public BaseAuthService() {}
+    private static void connect() throws  Exception{
+        Class.forName("org.sqlite.JDBC");
+        connection = DriverManager.getConnection("jdbc:sqlite:clients-db.sqlite");
+        stmt = connection.createStatement();
+    }
+
+    private static void disconnect() {
+        try {
+            stmt.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        try {
+            if (ps != null) {
+                ps.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        try {
+            connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
     @Override
     public String getNickByLoginPass(String login, String pass) {
-        for (Entry o : entries) {
-            if (o.login.equals(login) && o.pass.equals(pass)) return o.nick;
+        try {
+            connect();
+            ResultSet rs = stmt.executeQuery("SELECT nickname, login, password FROM users ");
+            ResultSetMetaData rsmd = rs.getMetaData();
+            while (rs.next()) {
+                if (rs.getString("login").equals(login) && rs.getString("password").equals(pass)) return rs.getString("nickname");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            disconnect();
         }
         return null;
     }
