@@ -1,25 +1,24 @@
 package clientchat;
-
+import javafx.scene.control.Alert;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.ListView;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+import java.io.RandomAccessFile;
+import java.net.URL;
+import java.util.ResourceBundle;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.net.URL;
-import java.util.ResourceBundle;
 
 public class Controller implements Initializable {
 
@@ -119,6 +118,27 @@ public class Controller implements Initializable {
                         }
                         jta.appendText(str + "\n");
                     }
+
+                    byte b[] = new byte[1800];
+                    String str1 = new String();
+                    try (RandomAccessFile raf = new RandomAccessFile("demo.txt", "r")) {
+                        if (raf.length() - 100 > 0) {
+                            raf.seek(raf.length() - 100);
+                        } else {
+                            raf.seek(0);
+                        }
+
+                        raf.read(b, 0, 100);
+                        for (int i = 0; i < b.length; i++) {
+                            str1 += (char) b[i];
+                        }
+                        jta.appendText(str1 + "\n");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+
+
                     while (true) {
                         String str = in.readUTF();
                         if (str.startsWith("/")) {
@@ -222,10 +242,6 @@ public class Controller implements Initializable {
         upperPanel.setManaged(false);
         upperPanel.setVisible(false);
         Platform.runLater(() -> Main.mainStage.setTitle("Время подключения истекло"));
-        // Пока не разобралась как добавить диалоговое окно.
-        // Попозже сделаю тогда...
-        // А на 3-ем курсе у нас будет как подключить библиотеку доп и где ее скачать ?
+
     }
-
-
 }
