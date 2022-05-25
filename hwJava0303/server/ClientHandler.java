@@ -1,8 +1,6 @@
 package server;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 
 public class ClientHandler {
@@ -11,6 +9,7 @@ public class ClientHandler {
     private DataInputStream in;
     private DataOutputStream out;
     private String name;
+    BufferedWriter writer;
 
     public ClientHandler(Server server, Socket socket) {
         try {
@@ -19,6 +18,7 @@ public class ClientHandler {
             this.in = new DataInputStream(socket.getInputStream());
             this.out = new DataOutputStream(socket.getOutputStream());
             this.name = "";
+            this.writer = null;
             new Thread(() -> {
                 try {
                     while (true) {
@@ -39,6 +39,7 @@ public class ClientHandler {
                             }
                         }
                     }
+                    writer = new BufferedWriter(new FileWriter("demo.txt", true));
                     while (true) {
                         String str = in.readUTF();
                         System.out.println("from " + name + ": " + str);
@@ -56,8 +57,13 @@ public class ClientHandler {
                                     sendMsg("Указанный ник уже кем-то занят");
                                 }
                             }
-                        } else
+                        } else {
                             server.broadcastMsg(name + ": " + str);
+                            server.broadcastMsg(name + ": " + str);
+                            writer.newLine();
+                            writer.write(name + ": " + str);
+                            writer.flush();
+                        }
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -66,15 +72,18 @@ public class ClientHandler {
                     server.broadcastMsg(name + " вышел из чата");
                     try {
                         socket.close();
+                        writer.close();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
             }).start();
 
-        } catch (IOException e) {
+        } catch (
+                IOException e) {
             e.printStackTrace();
         }
+
     }
 
     public void changeNick(String newNick) {
